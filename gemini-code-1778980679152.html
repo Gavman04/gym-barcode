@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crux Climbing Barcode Generator</title>
+    <!-- Include JsBarcode Library -->
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+    <style>
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            background-color: #121212;
+            color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .container {
+            max-width: 400px;
+            width: 100%;
+            background: #1e1e1e;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            text-align: center;
+        }
+        h2 { margin-top: 0; color: #ff5722; }
+        p { color: #aaa; font-size: 14px; }
+        input {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            border: 1px solid #333;
+            border-radius: 6px;
+            background: #2a2a2a;
+            color: white;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background: #ff5722;
+            border: none;
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.2s;
+            margin-top: 10px;
+        }
+        button:hover { background: #e64a19; }
+        #result-container {
+            margin-top: 25px;
+            display: none;
+        }
+        #final-image {
+            max-width: 100%;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            border: 4px solid white; /* Keeps barcode scannable on dark mode phones */
+        }
+        .instructions {
+            font-size: 13px;
+            color: #4caf50;
+            margin-top: 5px;
+        }
+        /* Hidden canvas used for generating the final image */
+        #hidden-canvas { display: none; }
+        #hidden-svg { display: none; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Crux Climbing Gym</h2>
+    <p>Northport, AL | Self Check-In Generator</p>
+    
+    <input type="text" id="name" placeholder="Full Name" required>
+    <input type="tel" id="phone" placeholder="Phone Number (e.g., 2055551234)" required>
+    
+    <button onclick="generateBarcode()">Generate Barcode</button>
+
+    <div id="result-container">
+        <img id="final-image" src="" alt="Your Gym Barcode">
+        <p class="instructions">↑ Press and hold the image to save it to your phone! ↑</p>
+    </div>
+</div>
+
+<!-- Hidden elements for processing -->
+<svg id="hidden-svg"></svg>
+<canvas id="hidden-canvas"></canvas>
+
+<script>
+function generateBarcode() {
+    const name = document.getElementById('name').value.trim();
+    let phone = document.getElementById('phone').value.trim().replace(/\D/g, ''); // Strip non-digits
+
+    if (!name || !phone) {
+        alert("Please enter both your name and phone number.");
+        return;
+    }
+
+    // Code 39 usually requires standard alphanumeric. 
+    // We'll clean the phone number to just digits.
+    const svgElement = document.getElementById('hidden-svg');
+    
+    // 1. Generate the Code 39 Barcode into the hidden SVG
+    JsBarcode(svgElement, phone, {
+        format: "CODE39",
+        width: 2,
+        height: 80,
+        displayValue: true, // Shows the phone number under the barcode
+        fontSize: 16,
+        background: "#ffffff",
+        lineColor: "#000000"
+    });
+
+    // 2. Wait for SVG to render, then draw everything onto a Canvas to make a single image
+    const svgString = new XMLSerializer().serializeToString(svgElement);
+    const svgBlob = new Blob([svgString], {type: "image/svg+xml;charset=utf-8"});
+    const URL = window.URL || window.webkitURL || window;
+    const blobURL = URL.createObjectURL(svgBlob);
+    
+    const image = new Image();
+    image.onload = function() {
+        const canvas = document.getElementById('hidden-canvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Set canvas size (giving padding for the header text)
+        canvas.width = image.width + 40;
+        canvas.height = image.height + 80;
+        
+        // Fill white background (crucial for scanners)
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        // Add Header Text
+        ctx.fillStyle = "#000000";
+        ctx.font = "bold 16px Arial";
+        ctx.textAlign = "center";
+        ctx.fillText(name, canvas.width / 2, 30);
+        
+        ctx.font = "14px Arial";
+        ctx.fillText("Crux Climbing, Northport AL", canvas.width / 2, 55);
+        
+        // Draw the barcode SVG onto the canvas
+        ctx.drawImage(image, 20, 70);
+        
+        // Convert canvas to a downloadable image
+        const finalImage = document.getElementById('final-image');
+        finalImage.src = canvas.toDataURL('image/png');
+        
+        // Show the result
+        document.getElementById('result-container').style.display = 'block';
+    };
+    image.src = blobURL;
+}
+</script>
+
+</body>
+</html>
