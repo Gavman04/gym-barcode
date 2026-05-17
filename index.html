@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Crux Climbing Barcode Generator</title>
-    <!-- Include JsBarcode Library -->
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
     <style>
         body {
@@ -83,7 +82,7 @@
     <p>Northport, AL | Self Check-In Generator</p>
     
     <input type="text" id="name" placeholder="Full Name" required>
-    <input type="tel" id="phone" placeholder="Phone Number (e.g., 2055551234)" required>
+    <input type="tel" id="phone" placeholder="Phone Number (10 digits)" required>
     
     <button onclick="generateBarcode()">Generate Barcode</button>
 
@@ -93,7 +92,6 @@
     </div>
 </div>
 
-<!-- Hidden elements for processing -->
 <svg id="hidden-svg"></svg>
 <canvas id="hidden-canvas"></canvas>
 
@@ -107,8 +105,17 @@ function generateBarcode() {
         return;
     }
 
-    // Code 39 usually requires standard alphanumeric. 
-    // We'll clean the phone number to just digits.
+    // Fix: If they included a leading country code "1", strip it off
+    if (phone.length === 11 && phone.startsWith('1')) {
+        phone = phone.substring(1);
+    }
+
+    // Fix: Strict 10-digit validation check
+    if (phone.length !== 10) {
+        alert("Please enter a valid 10-digit phone number (including area code). Do not include the country code (+1).");
+        return;
+    }
+
     const svgElement = document.getElementById('hidden-svg');
     
     // 1. Generate the Code 39 Barcode into the hidden SVG
@@ -116,7 +123,7 @@ function generateBarcode() {
         format: "CODE39",
         width: 2,
         height: 80,
-        displayValue: true, // Shows the phone number under the barcode
+        displayValue: true, // Shows the formatted phone number under the barcode
         fontSize: 16,
         background: "#ffffff",
         lineColor: "#000000"
